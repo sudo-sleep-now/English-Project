@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DataShield — Take back your digital footprint.</title>
+<meta name="description" content="Open-source privacy infrastructure. MIT-licensed core. Runs locally. No telemetry, ever." />
+
+<!-- Tailwind via CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+          mono: ['"SF Mono"', '"Fira Code"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+        },
+        colors: {
+          ink:   '#0a0e14',
+          ink2:  '#0c1018',
+          panel: '#11161f',
+          line:  '#1a2030',
+          cyan:  '#38bdf8',
+          teal:  '#2dd4bf',
+          rose:  '#f87171',
+        }
+      }
+    }
+  }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg-1:#0a0e14;
+    --bg-2:#0c1018;
+    --panel:#11161f;
+    --line:#1a2030;
+    --line-2:#222a3d;
+    --cyan:#38bdf8;
+    --teal:#2dd4bf;
+    --rose:#f87171;
+    --text:#e8edf5;
+    --muted:#8a93a6;
+    --muted-2:#5b6477;
+  }
+
+  *{ -webkit-font-smoothing:antialiased; }
+  html,body{
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(56,189,248,.08), transparent 60%),
+      radial-gradient(900px 500px at -10% 30%, rgba(45,212,191,.06), transparent 60%),
+      linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 100%);
+    background-attachment: fixed;
+    color: var(--text);
+    font-family:'Inter', system-ui, sans-serif;
+    overflow-x:hidden;
+  }
+  body{ min-height:100vh; }
+  ::-webkit-scrollbar{ width:10px; height:10px; }
+  ::-webkit-scrollbar-track{ background:#070a0f; }
+  ::-webkit-scrollbar-thumb{
+    background:linear-gradient(180deg, #1c2433, #11161f);
+    border-radius:10px; border:2px solid #070a0f;
+  }
+  ::-webkit-scrollbar-thumb:hover{ background:#2a3548; }
+  ::selection{ background:rgba(56,189,248,.28); color:#fff; }
+  .glass{
+    background: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.012));
+    border: 1px solid rgba(255,255,255,.06);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+  }
+  .glass-strong{
+    background: linear-gradient(180deg, rgba(17,22,31,.82), rgba(12,16,24,.72));
+    border: 1px solid rgba(255,255,255,.06);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+  }
+  .hairline{ background:linear-gradient(90deg, transparent, var(--line-2) 20%, var(--line-2) 80%, transparent); height:1px; }
+  .orb{
+    position:absolute; border-radius:9999px; filter:blur(90px);
+    pointer-events:none; opacity:.55; mix-blend-mode:screen;
+  }
+  @keyframes float-slow{ 0%,100%{ transform:translateY(0) } 50%{ transform:translateY(-10px) } }
+  @keyframes pulse-soft{
+    0%,100%{ opacity:.55; transform:scale(1) }
+    50%{ opacity:.9; transform:scale(1.04) }
+  }
+  @keyframes scan{
+    0%{ transform:translateY(-110%) }
+    100%{ transform:translateY(110%) }
+  }
+  @keyframes shimmer{
+    0%{ background-position:-200% 0 }
+    100%{ background-position:200% 0 }
+  }
+  @keyframes marquee{
+    0%{ transform:translateX(0) }
+    100%{ transform:translateX(-50%) }
+  }
+  @keyframes blink{ 0%,100%{ opacity:1 } 50%{ opacity:0 } }
+  @keyframes popup-out{
+    0%{ opacity:0; transform:translateY(8px) scale(.96) }
+    12%{ opacity:1; transform:translateY(0) scale(1) }
+    80%{ opacity:1; transform:translateY(0) scale(1) }
+    100%{ opacity:0; transform:translateY(-6px) scale(.98) }
+  }
+  @keyframes toast-in{
+    0%{ opacity:0; transform:translateY(20px) scale(.98) }
+    100%{ opacity:1; transform:translateY(0) scale(1) }
+  }
+  @keyframes grid-fade{
+    0%,100%{ opacity:.35 }
+    50%{ opacity:.6 }
+  }
+  @keyframes ring-pulse{
+    0%{ box-shadow:0 0 0 0 rgba(56,189,248,.45) }
+    70%{ box-shadow:0 0 0 14px rgba(56,189,248,0) }
+    100%{ box-shadow:0 0 0 0 rgba(56,189,248,0) }
+  }
+  @keyframes traffic-flow{
+    0%{ stroke-dashoffset:24 }
+    100%{ stroke-dashoffset:0 }
+  }
+  @keyframes caret-blink{
+    0%,49%{ opacity:1 }
+    50%,100%{ opacity:0 }
+  }
+  .reveal{ opacity:0; transform:translateY(28px); transition:opacity .8s cubic-bezier(.2,.7,.2,1), transform .8s cubic-bezier(.2,.7,.2,1); }
+  .reveal.in{ opacity:1; transform:translateY(0); }
+  .reveal[data-delay="1"]{ transition-delay:.08s }
+  .reveal[data-delay="2"]{ transition-delay:.16s }
+  .reveal[data-delay="3"]{ transition-delay:.24s }
+  .reveal[data-delay="4"]{ transition-delay:.32s }
+  .grid-bg{
+    background-image:
+      radial-gradient(rgba(56,189,248,.10) 1px, transparent 1px),
+      radial-gradient(rgba(45,212,191,.06) 1px, transparent 1px);
+    background-size: 24px 24px, 24px 24px;
+    background-position: 0 0, 12px 12px;
+  }
+  .grid-bg-fade{
+    -webkit-mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+    mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+  }
+  .dot{ width:10px; height:10px; border-radius:9999px; }
+  .conic-border{
+    position:relative;
+  }
+  .conic-border::before{
+    content:""; position:absolute; inset:-1px; border-radius:inherit;
+    padding:1px;
+    background: conic-gradient(from 180deg, rgba(56,189,248,.0), rgba(56,189,248,.55), rgba(45,212,191,.35), rgba(56,189,248,.0));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    pointer-events:none; opacity:.7;
+  }
+  .tok-kw { color:#c084fc; }
+  .tok-fn { color:#38bdf8; }
+  .tok-str{ color:#2dd4bf; }
+  .tok-num{ color:#fbbf24; }
+  .tok-com{ color:#5b6477; font-style:italic; }
+  .tok-pun { color:#8a93a6; }
+  .tok-var { color:#e8edf5; }
+  .tok-prop{ color:#7dd3fc; }
+  .marquee{ display:flex; width:max-content; animation: marquee 38s linear infinite; }
+  .marquee:hover{ animation-play-state:paused; }
+  .btn-shimmer{
+    position:relative; overflow:hidden;
+  }
+  .btn-shimmer::after{
+    content:""; position:absolute; inset:0;
+    background:linear-gradient(110deg, transparent 30%, rgba(255,255,255,.18) 50%, transparent 70%);
+    background-size:200% 100%; background-position:-200% 0;
+    transition:background-position .9s ease;
+  }
+  .btn-shimmer:hover::after{ background-position:200% 0; }
+  .mobile-menu{ max-height:0; overflow:hidden; transition:max-height .45s ease; }
+  .mobile-menu.open{ max-height:340px; }
+  :focus-visible{ outline:2px solid var(--cyan); outline-offset:2px; border-radius:6px; }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; }
+  }
+  .popup{
+    position:absolute; right:14px;
+    background: linear-gradient(180deg, rgba(17,22,31,.96), rgba(12,16,24,.94));
+    border:1px solid rgba(248,113,113,.25);
+    box-shadow: 0 18px 40px -12px rgba(0,0,0,.6), 0 0 0 1px rgba(248,113,113,.08) inset;
+    backdrop-filter: blur(10px);
+    border-radius:10px;
+    padding:10px 12px;
+    width: 230px;
+    display:flex; gap:10px; align-items:flex-start;
+  }
+  .popup .icon{
+    width:28px; height:28px; border-radius:8px; flex:0 0 28px;
+    background:linear-gradient(180deg, rgba(248,113,113,.22), rgba(248,113,113,.08));
+    border:1px solid rgba(248,113,113,.35);
+    display:flex; align-items:center; justify-content:center;
+    color:#fda4a4;
+  }
+  .popup .ttl{ font-size:11px; font-weight:600; color:#fecaca; letter-spacing:.02em; }
+  .popup .desc{ font-size:10.5px; color:#9aa3b5; margin-top:2px; line-height:1.35; }
+  .footer-glow{
+    position:absolute; left:50%; top:-1px; transform:translateX(-50%);
+    width:60%; height:1px;
+    background:linear-gradient(90deg, transparent, rgba(56,189,248,.6), rgba(45,212,191,.4), transparent);
+    animation: shimmer 6s linear infinite;
+    background-size:200% 100%;
+  }
+  .stat-line{
+    background:linear-gradient(90deg, var(--cyan), transparent);
+    height:1px; width:36px; display:block; margin-top:8px;
+  }
+</style>
+</head>
+<body class="font-sans text-[15px] leading-relaxed">
+<header id="site-header" class="fixed top-0 inset-x-0 z-50 transition-all duration-300">
+  <div class="glass-strong border-b border-white/5">
+    <div class="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
+      <div class="flex items-center justify-between h-16">
+        <a href="#top" class="flex items-center gap-2.5 group" aria-label="DataShield home">
+          <span class="relative grid place-items-center w-9 h-9 rounded-lg bg-white/[0.03] border border-white/10">
+            <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="color:#38bdf8">
+              <path d="M12 2.5 4 5.2v6.3c0 4.7 3.2 8.2 8 10 4.8-1.8 8-5.3 8-10V5.2L12 2.5Z"/>
+              <path d="m9 12 2.2 2.2L15.5 10" stroke="#2dd4bf"/>
+            </svg>
+            <span class="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" style="box-shadow:0 0 0 1px rgba(56,189,248,.4) inset, 0 0 24px rgba(56,189,248,.25);"></span>
+          </span>
+          <span class="flex flex-col leading-none">
+            <span class="text-[15px] font-semibold tracking-tight">DataShield</span>
+            <span class="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">v2.4.1 · MIT</span>
+          </span>
+        </a>
+        <nav class="hidden md:flex items-center gap-1" aria-label="Primary">
+          <a href="#features" class="px-3.5 py-2 text-sm text-slate-300 hover:text-white transition-colors rounded-md hover:bg-white/[0.04]">Features</a>
+          <a href="#transparency" class="px-3.5 py-2 text-sm text-slate-300 hover:text-white transition-colors rounded-md hover:bg-white/[0.04]">Transparency</a>
+          <a href="#install" class="px-3.5 py-2 text-sm text-slate-300 hover:text-white transition-colors rounded-md hover:bg-white/[0.04]">Install</a>
+          <a href="#faq" class="px-3.5 py-2 text-sm text-slate-300 hover:text-white transition-colors rounded-md hover:bg-white/[0.04]">FAQ</a>
+          <a href="#" class="px-3.5 py-2 text-sm text-slate-400 hover:text-white transition-colors rounded-md hover:bg-white/[0.04] flex items-center gap-1.5">
+            <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="currentColor" aria-hidden="true"><path d="M12 .5A11.5 11.5 0 0 0 .5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2.02c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.3-1.7-1.3-1.7-1.06-.72.08-.71.08-.71 1.17.08 1.79 1.2 1.79 1.2 1.04 1.79 2.73 1.27 3.4.97.1-.76.4-1.27.74-1.56-2.56-.29-5.26-1.28-5.26-5.7 0-1.26.45-2.29 1.2-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.2-1.5 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.75.81 1.2 1.84 1.2 3.1 0 4.43-2.7 5.41-5.28 5.69.42.36.79 1.07.79 2.16v3.2c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5Z"/></svg>
+            GitHub
+          </a>
+        </nav>
+        <div class="hidden sm:flex items-center gap-2">
+          <a href="#install" class="btn-shimmer relative inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium text-[#04141c] bg-gradient(180deg, #38bdf8, #0ea5e9) hover:shadow-[0_8px_24px_-6px_rgba(56,189,248,.5)] transition-shadow">
+            <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+            Download
+          </a>
+        </div>
+        <button id="menu-toggle" class="md:hidden grid place-items-center w-10 h-10 rounded-md hover:bg-white/5 transition" aria-label="Toggle menu" aria-expanded="false">
+          <svg id="menu-icon" viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+      </div>
+      <div id="mobile-menu" class="mobile-menu md:hidden">
+        <nav class="pb-4 pt-1 flex flex-col gap-1" aria-label="Mobile">
+          <a href="#features" class="px-3 py-2.5 text-sm text-slate-300 hover:text-white rounded-md hover:bg-white/5">Features</a>
+          <a href="#transparency" class="px-3 py-2.5 text-sm text-slate-300 hover:text-white rounded-md hover:bg-white/5">Transparency</a>
+          <a href="#install" class="px-3 py-2.5 text-sm text-slate-300 hover:text-white rounded-md hover:bg-white/5">Install</a>
+          <a href="#faq" class="px-3 py-2.5 text-sm text-slate-300 hover:text-white rounded-md hover:bg-white/5">FAQ</a>
+          <a href="#install" class="mt-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium text-[#04141c] bg-gradient(180deg, #38bdf8, #0ea5e9)">Download DataShield</a>
+        </nav>
+      </div>
+    </div>
+  </div>
+</header>
+<section id="top" class="relative pt-32 sm:pt-36 lg:pt-44 pb-20 lg:pb-28 overflow-hidden">
+  <div class="orb" style="width:520px;height:520px;background:#38bdf8;top:-160px;right:-120px;"></div>
+  <div class="orb" style="width:420px;height:420px;background:#2dd4bf;top:240px;left:-140px;opacity:.35;"></div>
+  <div class="absolute inset-0 grid-bg grid-bg-fade opacity-70 pointer-events-none" aria-hidden="true"></div>
+
+  <div class="relative max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
+    <div class="grid lg:grid-cols-2 gap-12 lg:gap-10 items-center">
+      <div class="reveal">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass text-xs font-mono text-slate-300 mb-7">
+          <span class="relative flex w-2 h-2">
+            <span class="absolute inset-0 rounded-full bg-[#2dd4bf] opacity-60" style="animation:pulse-soft 2.2s ease-in-out infinite;"></span>
+            <span class="relative inline-flex w-2 h-2 rounded-full bg-[#2dd4bf]"></span>
+          </span>
+          <span>OPEN SOURCE · MIT LICENSED</span>
+          <span class="text-slate-600">|</span>
+          <span class="text-slate-400">2.4.1</span>
+        </div>
+        <h1 class="font-semibold tracking-tight text-white"
+            style="font-size:clamp(2.4rem, 6vw, 4rem); line-height:1.05; letter-spacing:-0.02em;">
+          Take back your<br/>
+          <span class="relative inline-block">
+            <span class="bg-gradient-to-r from-[#38bdf8] via-[#22d3ee] to-[#2dd4bf] bg-clip-text text-transparent">digital footprint.</span>
+            <svg class="absolute -bottom-2 left-0 w-full" height="10" viewBox="0 0 320 10" preserveAspectRatio="none" aria-hidden="true">
+              <path d="M2 6 Q 80 1, 160 5 T 318 4" fill="none" stroke="url(#g1)" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+              <defs>
+                <linearGradient id="g1" x1="0" x2="1">
+                  <stop offset="0" stop-color="#38bdf8"/>
+                  <stop offset="1" stop-color="#2dd4bf"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </span>
+        </h1>
+        <p class="mt-7 text-slate-300/90 max-w-xl" style="font-size:clamp(1rem, 1.4vw, 1.125rem);">
+          You're not the user — you're the product. <span class="text-white font-medium">DataShield</span> runs locally, injects decoy noise into tracker pipelines, and strips consent walls before they render. No accounts. No telemetry. No compromises.
+        </p>
+        <div class="mt-8 flex flex-wrap items-center gap-3">
+          <button id="hero-download" data-download-btn class="btn-shimmer relative inline-flex items-center gap-2 px-5 py-3 rounded-md text-sm font-semibold text-[#04141c] bg-gradient(180deg, #38bdf8, #0ea5e9) hover:shadow-[0_10px_30px_-8px_rgba(56,189,248,.55)] transition-shadow">
+            <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+            <span data-label>Download Now</span>
+          </button>
+          <a href="#transparency" class="inline-flex items-center gap-2 px-5 py-3 rounded-md text-sm font-medium text-slate-200 glass hover:bg-white/[0.06] transition-colors">
+            Read the source
+            <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+          </a>
+        </div>
+        <dl class="mt-12 grid grid-cols-3 gap-6 max-w-lg">
+          <div>
+            <dt class="text-xs font-mono uppercase tracking-wider text-slate-500">Blocked / day</dt>
+            <dd class="mt-1 text-2xl font-semibold text-white tabular-nums">2.4M</dd>
+            <span class="stat-line"></span>
+          </div>
+          <div>
+            <dt class="text-xs font-mono uppercase tracking-wider text-slate-500">Trackers</dt>
+            <dd class="mt-1 text-2xl font-semibold text-white tabular-nums">7,182</dd>
+            <span class="stat-line" style="background:linear-gradient(90deg,var(--teal),transparent);"></span>
+          </div>
+          <div>
+            <dt class="text-xs font-mono uppercase tracking-wider text-slate-500">Telemetry</dt>
+            <dd class="mt-1 text-2xl font-semibold text-white">0<span class="text-[#2dd4bf]">B</span></dd>
+            <span class="stat-line" style="background:linear-gradient(90deg,var(--teal),transparent);"></span>
+          </div>
+        </dl>
+      </div>
+      <div class="reveal" data-delay="2">
+        <div class="conic-border rounded-2xl">
+          <div class="relative rounded-2xl overflow-hidden glass-strong" style="box-shadow:0 40px 80px -30px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.04);">
+            <div class="flex items-center gap-3 px-4 py-3 border-b border-white/[0.06] bg-black/30">
+              <div class="flex gap-1.5">
+                <span class="dot bg-[#f87171]/80"></span>
+                <span class="dot bg-[#fbbf24]/80"></span>
+                <span class="dot bg-[#2dd4bf]/80"></span>
+              </div>
+              <div class="flex-1 mx-2">
+                <div class="flex items-center gap-2 px-3 py-1.5 rounded-md bg-white/[0.04] border border-white/[0.06] text-[11px] font-mono text-slate-400">
+                  <svg viewBox="0 0 24 24" class="w-3 h-3 text-[#2dd4bf]" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  https://news.example.com/article/tech-industry
+                </div>
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="px-2 py-1 rounded text-[10px] font-mono bg-[#2dd4bf]/10 text-[#2dd4bf] border border-[#2dd4bf]/20">SHIELD: ON</span>
+              </div>
+            </div>
+            <div class="relative h-[420px] sm:h-[460px] bg-gradient-to-b from-[#0b1018] to-[#0a0e14] overflow-hidden">
+              <div class="absolute inset-0 p-5 sm:p-6">
+                <div class="max-w-md">
+                  <div class="h-2.5 w-24 rounded-full bg-white/[0.06] mb-4"></div>
+                  <div class="h-4 w-3/4 rounded-full bg-white/[0.10] mb-2.5"></div>
+                  <div class="h-4 w-5/6 rounded-full bg-white/[0.10] mb-2.5"></div>
+                  <div class="h-4 w-2/3 rounded-full bg-white/[0.08] mb-6"></div>
+
+                  <div class="h-2 w-full rounded-full bg-white/[0.05] mb-1.5"></div>
+                  <div class="h-2 w-11/12 rounded-full bg-white/[0.05] mb-1.5"></div>
+                  <div class="h-2 w-10/12 rounded-full bg-white/[0.05] mb-1.5"></div>
+                  <div class="h-2 w-9/12 rounded-full bg-white/[0.05] mb-6"></div>
+
+                  <div class="grid grid-cols-3 gap-2 mb-6">
+                    <div class="h-16 rounded-md bg-white/[0.04] border border-white/[0.05]"></div>
+                    <div class="h-16 rounded-md bg-white/[0.04] border border-white/[0.05]"></div>
+                    <div class="h-16 rounded-md bg-white/[0.04] border border-white/[0.05]"></div>
+                  </div>
+
+                  <div class="h-2 w-full rounded-full bg-white/[0.05] mb-1.5"></div>
+                  <div class="h-2 w-10/12 rounded-full bg-white/[0.05] mb-1.5"></div>
+                  <div class="h-2 w-8/12 rounded-full bg-white/[0.05]"></div>
+                </div>
+              </div>
+              <div class="absolute inset-x-0 top-0 h-24 pointer-events-none" style="background:linear-gradient(180deg, rgba(56,189,248,.10), transparent); animation:scan 4.5s linear infinite;"></div>
+              <div id="popup-stage" class="absolute inset-0 pointer-events-none"></div>
+              <div class="absolute left-4 bottom-4 flex items-center gap-2 px-2.5 py-1.5 rounded-md glass-strong text-[11px] font-mono text-slate-300">
+                <svg viewBox="0 0 24 24" class="w-3.5 h-3.5 text-[#2dd4bf]" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5 4 5.2v6.3c0 4.7 3.2 8.2 8 10 4.8-1.8 8-5.3 8-10V5.2L12 2.5Z"/><path d="m9 12 2.2 2.2L15.5 10"/></svg>
+                <span><span class="text-white font-semibold">14</span> trackers neutralized</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between px-4 py-2 border-t border-white/[0.06] bg-black/30 text-[10.5px] font-mono text-slate-500">
+              <div class="flex items-center gap-3">
+                <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#2dd4bf]" style="animation:pulse-soft 1.8s infinite;"></span>local · /tmp/shield.sock</span>
+                <span class="hidden sm:inline">net::OK</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span>CPU 0.3%</span>
+                <span class="text-[#2dd4bf]">0B sent</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="absolute -left-4 sm:-left-6 bottom-6 hidden md:block glass-strong rounded-xl p-3 w-48" style="animation:float-slow 6s ease-in-out infinite;">
+          <div class="text-[10px] font-mono uppercase tracking-wider text-slate-500">Data poisoned</div>
+          <div class="mt-1 text-lg font-semibold text-white tabular-nums">318 <span class="text-[#2dd4bf] text-sm font-normal">KB</span></div>
+          <div class="mt-2 h-1.5 w-full rounded-full bg-white/5 overflow-hidden">
+            <div class="h-full w-2/3 rounded-full bg-gradient-to-r from-[#38bdf8] to-[#2dd4bf]"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="py-10 border-y border-white/[0.05] bg-black/20 overflow-hidden">
+  <div class="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 mb-5">
+    <p class="text-xs font-mono uppercase tracking-[0.2em] text-slate-500 text-center">Audited &amp; cited by</p>
+  </div>
+  <div class="relative">
+    <div class="marquee gap-12 px-6">
+      <span class="text-slate-500 font-semibold tracking-tight text-lg whitespace-nowrap">Noone</span>
+      <span class="text-slate-600">·</span>
+      <span class="text-slate-500 font-semibold tracking-tight text-lg whitespace-nowrap">Noone</span>
+      <span class="text-slate-600">·</span>
+      <span class="text-slate-500 font-semibold tracking-tight text-lg whitespace-nowrap">Noone</span>
+      <span class="text-slate-600">·</span>
+      <span class="text-slate-500 font-semibold tracking-tight text-lg whitespace-nowrap">Noone</span>
+      <span class="text-slate-600">·</span>
+      <span class="text-slate-500 font-semibold tracking-tight text-lg whitespace-nowrap">Noone</span>
+      <span class="text-slate-600">·</span>
+      <span class="text-slate-500 font-semibold tracking-tight text-lg whitespace-nowrap">Noone</span>
+      <span class="text-slate-600">·</span>
+      <span class="text-slate-500 font-semibold tracking-tight text-lg whitespace-nowrap">Noone</span>
+      <span class="text-slate-600">·</span>
+      <span class="text-slate-500 font-semibold tracking-tight text-lg whitespace-nowrap">Noone</span>
+      <span class="text-slate-600">·</span>
+      <span class="text-slate-500 font-semibold tracking-tight text-lg whitespace-nowrap">Noone</span>
+      <span class="text-slate-600">·</span>
+      <span class="text-slate-500 font-semibold tracking-tight text-lg whitespace-nowrap">Noone</span>
+      <span class="text-slate-600">·</span>
+      <span class="text-slate-500 font-semibold tracking-tight text-lg whitespace-nowrap">Noone</span>
+      <span class="text-slate-600">·</span>
+      <span class="text-slate-500 font-semibold tracking-tight text-lg whitespace-nowrap">Noone</span>
+      <span class="text-slate-600">·</span>
+      <span class="text-slate-500 font-semibold tracking-tight text-lg whitespace-nowrap">Noone</span>
+      <span class="text-slate-600">·</span>
+      <span class="text-slate-500 font-semibold tracking-tight text-lg whitespace-nowrap">Noone</span>
+      <span class="text-slate-600">·</span>
+      <span class="text-slate-500 font-semibold tracking-tight text-lg whitespace-nowrap">Noone</span>
+      <span class="text-slate-600">·</span>
+      <span class="text-slate-500 font-semibold tracking-tight text-lg whitespace-nowrap">Noone</span>
+      <span class="text-slate-600">·</span>
+      <span class="text-slate-500 font-semibold tracking-tight text-lg whitespace-nowrap">Noone</span>
+      <span class="text-slate-600">·</span>
+      <span class="text-slate-500 font-semibold tracking-tight text-lg whitespace-nowrap">Noone</span>
+      <span class="text-slate-600">·</span>
+      <span class="text-slate-500 font-semibold tracking-tight text-lg whitespace-nowrap">Noone</span>
+      <span class="text-slate-600">·</span>
+      <span class="text-slate-500 font-semibold tracking-tight text-lg whitespace-nowrap">Noone</span>
+      <span class="text-slate-600">·</span>
+      <span class="text-slate-500 font-semibold tracking-tight text-lg whitespace-nowrap">Noone</span>
+      <span class="text-slate-600">·</span>
+      <span class="text-slate-500 font-semibold tracking-tight text-lg whitespace-nowrap">Noone</span>
+      <span class="text-slate-600">·</span>
+      <span class="text-slate-500 font-semibold tracking-tight text-lg whitespace-nowrap">Noone</span>
+      <span class="text-slate-600">·</span>
+      <span class="text-slate-500 font-semibold tracking-tight text-lg whitespace-nowrap">Noone</span>
+      <span class="text-slate-600">·</span>
+      <span class="text-slate-500 font-semibold tracking-tight text-lg whitespace-nowrap">Noone</span>
+      <span class="text-slate-600">·</span>
+      <span class="text-slate-500 font-semibold tracking-tight text-lg whitespace-nowrap">Noone</span>
+      <span class="text-slate-600">·</span>
+      <span class="text-slate-500 font-semibold tracking-tight text-lg whitespace-nowrap">Noone</span>
+      <span class="text-slate-600">·</span>
+      <span class="text-slate-500 font-semibold tracking-tight text-lg whitespace-nowrap">Noone</span>
+      <span class="text-slate-600">·</span>
+    </div>
+  </div>
+</section>
+<section id="features" class="relative py-24 lg:py-32">
+  <div class="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
+
+    <div class="max-w-2xl mb-14 lg:mb-20 reveal">
+      <div class="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-[0.2em] text-[#38bdf8] mb-4">
+        <span class="w-6 h-px bg-[#38bdf8]"></span> 01 / Features
+      </div>
+      <h2 class="font-semibold tracking-tight text-white" style="font-size:clamp(1.9rem, 3.5vw, 2.75rem); line-height:1.1;">
+        Two engines. One uncompromising perimeter.
+      </h2>
+      <p class="mt-4 text-slate-400 max-w-xl">
+        DataShield runs as a local OS-level proxy. Every request is intercepted, fingerprinted, and either neutralized or poisoned — in microseconds, with zero cloud round-trips.
+      </p>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-6 lg:gap-8">
+      <article class="reveal" data-delay="1">
+        <div class="group relative h-full rounded-2xl glass-strong p-7 lg:p-8 overflow-hidden transition-transform duration-500 hover:-translate-y-1">
+          <div class="absolute -top-20 -right-20 w-64 h-64 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" style="background:radial-gradient(circle, rgba(45,212,191,.25), transparent 70%);"></div>
+
+          <div class="relative">
+            <div class="flex items-center justify-between mb-6">
+              <div class="grid place-items-center w-12 h-12 rounded-xl bg-[#2dd4bf]/[0.08] border border-[#2dd4bf]/25">
+                <svg viewBox="0 0 24 24" class="w-6 h-6 text-[#2dd4bf]" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2.5 4 5.2v6.3c0 4.7 3.2 8.2 8 10 4.8-1.8 8-5.3 8-10V5.2L12 2.5Z"/>
+                  <path d="M12 8v4"/><path d="M12 16h.01"/>
+                </svg>
+              </div>
+              <span class="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">ENGINE · A</span>
+            </div>
+
+            <h3 class="text-xl lg:text-2xl font-semibold text-white tracking-tight">Data Poisoner</h3>
+            <p class="mt-3 text-slate-400">
+              Injects high-entropy pseudo-random gibberish into outbound telemetry streams. Trackers receive realistic-looking noise indistinguishable from genuine traffic — corrupting their models without breaking site functionality.
+            </p>
+            <div class="mt-6 rounded-lg bg-black/40 border border-white/[0.06] font-mono text-[11.5px] leading-relaxed overflow-hidden">
+              <div class="px-3 py-2 border-b border-white/[0.05] flex items-center justify-between">
+                <span class="text-slate-500">poisoner.log</span>
+                <span class="flex items-center gap-1.5 text-[#2dd4bf]"><span class="w-1.5 h-1.5 rounded-full bg-[#2dd4bf]" style="animation:pulse-soft 1.4s infinite;"></span>active</span>
+              </div>
+              <div class="p-3 space-y-1 text-slate-300">
+                <div><span class="text-slate-600">→</span> intercept <span class="tok-str">analytics.tiktok.com/i</span></div>
+                <div><span class="text-slate-600">→</span> inject <span class="tok-num">4096</span> bytes <span class="tok-com">// entropy: 7.99</span></div>
+                <div><span class="text-[#2dd4bf]">✓</span> forwarded · model degraded</div>
+                <div><span class="text-slate-600">→</span> intercept <span class="tok-str">fbq.facebook.com</span></div>
+                <div><span class="text-slate-600">→</span> inject <span class="tok-num">2048</span> bytes <span class="tok-com">// entropy: 7.97</span></div>
+                <div><span class="text-[#2dd4bf]">✓</span> forwarded · model degraded<span class="inline-block w-2 h-3.5 ml-1 align-middle bg-[#2dd4bf]" style="animation:caret-blink 1s steps(1) infinite;"></span></div>
+              </div>
+            </div>
+
+            <ul class="mt-6 space-y-2.5 text-sm text-slate-300">
+              <li class="flex gap-2.5"><svg class="w-4 h-4 mt-0.5 text-[#2dd4bf] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg><span>Per-domain injection profiles with configurable entropy floors.</span></li>
+              <li class="flex gap-2.5"><svg class="w-4 h-4 mt-0.5 text-[#2dd4bf] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg><span>Differential-privacy-safe noise curves (Gaussian + Laplace).</span></li>
+              <li class="flex gap-2.5"><svg class="w-4 h-4 mt-0.5 text-[#2dd4bf] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg><span>Zero overhead — sub-millisecond added latency.</span></li>
+            </ul>
+          </div>
+        </div>
+      </article>
+      <article class="reveal" data-delay="2">
+        <div class="group relative h-full rounded-2xl glass-strong p-7 lg:p-8 overflow-hidden transition-transform duration-500 hover:-translate-y-1">
+          <div class="absolute -top-20 -right-20 w-64 h-64 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" style="background:radial-gradient(circle, rgba(56,189,248,.25), transparent 70%);"></div>
+
+          <div class="relative">
+            <div class="flex items-center justify-between mb-6">
+              <div class="grid place-items-center w-12 h-12 rounded-xl bg-[#38bdf8]/[0.08] border border-[#38bdf8]/25">
+                <svg viewBox="0 0 24 24" class="w-6 h-6 text-[#38bdf8]" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 12h4l2-7 4 14 2-7h6"/>
+                </svg>
+              </div>
+              <span class="text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500">ENGINE · B</span>
+            </div>
+
+            <h3 class="text-xl lg:text-2xl font-semibold text-white tracking-tight">Ad &amp; Tracker Blocker</h3>
+            <p class="mt-3 text-slate-400">
+              Network-level blocking of script trackers, fingerprinting libraries, and consent wall SDKs. Pages render faster, layout shifts vanish, and "Accept cookies" dialogs never reach the DOM.
+            </p>
+            <div class="mt-6 rounded-lg bg-black/40 border border-white/[0.06] font-mono text-[11.5px] leading-relaxed overflow-hidden">
+              <div class="px-3 py-2 border-b border-white/[0.05] flex items-center justify-between">
+                <span class="text-slate-500">blocklist.rules</span>
+                <span class="text-[#38bdf8]">7,182 active</span>
+              </div>
+              <div class="p-3 space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <span class="text-slate-300"><span class="text-[#f87171]">×</span> googletagmanager.com</span>
+                  <span class="text-slate-600">script</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-slate-300"><span class="text-[#f87171]">×</span> connect.facebook.net</span>
+                  <span class="text-slate-600">xhr</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-slate-300"><span class="text-[#f87171]">×</span> cdn.cookielaw.org</span>
+                  <span class="text-slate-600">sdk</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-slate-300"><span class="text-[#f87171]">×</span> analytics.tiktok.com</span>
+                  <span class="text-slate-600">pixel</span>
+                </div>
+                <div class="flex items-center justify-between text-slate-500">
+                  <span>+ 7,178 more</span>
+                  <span>·</span>
+                </div>
+              </div>
+            </div>
+
+            <ul class="mt-6 space-y-2.5 text-sm text-slate-300">
+              <li class="flex gap-2.5"><svg class="w-4 h-4 mt-0.5 text-[#38bdf8] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg><span>Cosmetic filtering via uBlock-style selector rules.</span></li>
+              <li class="flex gap-2.5"><svg class="w-4 h-4 mt-0.5 text-[#38bdf8] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg><span>Auto-detects and bypasses consent wall SDKs.</span></li>
+              <li class="flex gap-2.5"><svg class="w-4 h-4 mt-0.5 text-[#38bdf8] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg><span>Subscribe to community-maintained lists or roll your own.</span></li>
+            </ul>
+          </div>
+        </div>
+      </article>
+    </div>
+    <div class="mt-6 lg:mt-8 grid sm:grid-cols-3 gap-4 lg:gap-6">
+      <div class="reveal" data-delay="1">
+        <div class="rounded-xl glass p-5">
+          <div class="flex items-center gap-2.5 mb-2">
+            <svg class="w-4 h-4 text-[#2dd4bf]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            <h4 class="font-medium text-white">Local-first</h4>
+          </div>
+          <p class="text-sm text-slate-400">Runs on your machine. No relay servers, no cloud sync, no account.</p>
+        </div>
+      </div>
+      <div class="reveal" data-delay="2">
+        <div class="rounded-xl glass p-5">
+          <div class="flex items-center gap-2.5 mb-2">
+            <svg class="w-4 h-4 text-[#38bdf8]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2 4 5v6c0 4.5 3 8 8 10 5-2 8-5.5 8-10V5l-8-3z"/></svg>
+            <h4 class="font-medium text-white">Zero telemetry</h4>
+          </div>
+          <p class="text-sm text-slate-400">Verified by independent audit. The binary ships without any analytics SDKs.</p>
+        </div>
+      </div>
+      <div class="reveal" data-delay="3">
+        <div class="rounded-xl glass p-5">
+          <div class="flex items-center gap-2.5 mb-2">
+            <svg class="w-4 h-4 text-[#fbbf24]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3z"/></svg>
+            <h4 class="font-medium text-white">Reproducible builds</h4>
+          </div>
+          <p class="text-sm text-slate-400">Every release is built from source with byte-identical hashes across CI runners.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<section id="transparency" class="relative py-24 lg:py-32 overflow-hidden">
+  <div class="orb" style="width:480px;height:480px;background:#2dd4bf;top:50%;left:-200px;opacity:.25;"></div>
+
+  <div class="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
+    <div class="grid lg:grid-cols-12 gap-12 items-center">
+      <div class="lg:col-span-5 reveal">
+        <div class="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-[0.2em] text-[#2dd4bf] mb-4">
+          <span class="w-6 h-px bg-[#2dd4bf]"></span> 02 / Transparency
+        </div>
+        <h2 class="font-semibold tracking-tight text-white" style="font-size:clamp(1.9rem, 3.5vw, 2.75rem); line-height:1.1;">
+          No black boxes.<br/>No "trust us."
+        </h2>
+        <p class="mt-5 text-slate-400">
+          The entire core is MIT-licensed and lives in a single readable file. Read it, audit it, fork it, compile it yourself. Reproducible builds guarantee the binary you install is the binary in the repo.
+        </p>
+
+        <div class="mt-7 space-y-3">
+          <div class="flex items-start gap-3">
+            <div class="grid place-items-center w-7 h-7 rounded-md bg-[#2dd4bf]/10 border border-[#2dd4bf]/20 flex-shrink-0">
+              <svg class="w-3.5 h-3.5 text-[#2dd4bf]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 12 5 5L20 7"/></svg>
+            </div>
+            <div>
+              <div class="text-sm font-medium text-white">12,847 lines of audited code</div>
+              <div class="text-xs text-slate-500">Reviewed by Trail of Bits, 2024</div>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <div class="grid place-items-center w-7 h-7 rounded-md bg-[#2dd4bf]/10 border border-[#2dd4bf]/20 flex-shrink-0">
+              <svg class="w-3.5 h-3.5 text-[#2dd4bf]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 12 5 5L20 7"/></svg>
+            </div>
+            <div>
+              <div class="text-sm font-medium text-white">Reproducible from source</div>
+              <div class="text-xs text-slate-500">SHA-256 verified across 3 CI providers</div>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <div class="grid place-items-center w-7 h-7 rounded-md bg-[#2dd4bf]/10 border border-[#2dd4bf]/20 flex-shrink-0">
+              <svg class="w-3.5 h-3.5 text-[#2dd4bf]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 12 5 5L20 7"/></svg>
+            </div>
+            <div>
+              <div class="text-sm font-medium text-white">No contributor CLA, no vendored blobs</div>
+              <div class="text-xs text-slate-500">Pure DCO sign-offs, 100% FOSS dependencies</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8 flex flex-wrap gap-3">
+          <a href="#" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium text-white glass hover:bg-white/[0.06] transition-colors">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5A11.5 11.5 0 0 0 .5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2.02c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.3-1.7-1.3-1.7-1.06-.72.08-.71.08-.71 1.17.08 1.79 1.2 1.79 1.2 1.04 1.79 2.73 1.27 3.4.97.1-.76.4-1.27.74-1.56-2.56-.29-5.26-1.28-5.26-5.7 0-1.26.45-2.29 1.2-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.2-1.5 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.75.81 1.2 1.84 1.2 3.1 0 4.43-2.7 5.41-5.28 5.69.42.36.79 1.07.79 2.16v3.2c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5Z"/></svg>
+            View on GitHub
+          </a>
+          <a href="#" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium text-[#04141c] bg-gradient(180deg, #2dd4bf, #14b8a6) hover:shadow-[0_8px_24px_-6px_rgba(45,212,191,.5)] transition-shadow">
+            Download audit report
+          </a>
+        </div>
+      </div>
+
+      <div class="lg:col-span-7 reveal" data-delay="2">
+        <div class="rounded-2xl overflow-hidden glass-strong" style="box-shadow:0 40px 80px -30px rgba(0,0,0,.7);">
+          <div class="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06] bg-black/40">
+            <div class="flex items-center gap-3">
+              <div class="flex gap-1.5">
+                <span class="dot bg-[#f87171]/80"></span>
+                <span class="dot bg-[#fbbf24]/80"></span>
+                <span class="dot bg-[#2dd4bf]/80"></span>
+              </div>
+              <span class="text-[11px] font-mono text-slate-500">datashield — core/verify.ts</span>
+            </div>
+            <div class="hidden sm:flex items-center gap-2 text-[10px] font-mono text-slate-500">
+              <span class="px-1.5 py-0.5 rounded bg-white/[0.04]">main</span>
+              <span>·</span>
+              <span>UTF-8</span>
+              <span>·</span>
+              <span>TS 5.4</span>
+            </div>
+          </div>
+          <div class="flex font-mono text-[12.5px] leading-[1.7] bg-[#0a0e14]">
+            <div class="py-4 pl-4 pr-3 text-right select-none text-slate-700 border-r border-white/[0.04]" aria-hidden="true">
+              <div>1</div><div>2</div><div>3</div><div>4</div><div>5</div>
+              <div>6</div><div>7</div><div>8</div><div>9</div><div>10</div>
+              <div>11</div><div>12</div><div>13</div><div>14</div><div>15</div>
+              <div>16</div><div>17</div><div>18</div><div>19</div><div>20</div>
+              <div>21</div><div>22</div><div>23</div><div>24</div><div>25</div>
+              <div>26</div><div>27</div><div>28</div><div>29</div><div>30</div>
+            </div>
+            <div class="py-4 pl-4 pr-5 overflow-x-auto flex-1">
+<pre class="whitespace-pre"><code><span class="tok-com">// MIT License — github.com/datashield/core</span>
+<span class="tok-com">// Verification harness: confirm zero outbound telemetry.</span>
+
+<span class="tok-kw">import</span> { <span class="tok-var">intercept</span>, <span class="tok-var">hash</span> } <span class="tok-kw">from</span> <span class="tok-str">"./core"</span>;
+<span class="tok-kw">import</span> { <span class="tok-var">assertEqual</span> } <span class="tok-kw">from</span> <span class="tok-str">"assert"</span>;
+
+<span class="tok-kw">const</span> <span class="tok-var">EXPECTED_HASH</span> = <span class="tok-str">"sha256:a1b9…f7c3"</span>;
+<span class="tok-kw">const</span> <span class="tok-var">SOCKET</span>        = <span class="tok-str">"/tmp/datashield.sock"</span>;
+
+<span class="tok-com">// 1. Spawn the local interceptor.</span>
+<span class="tok-kw">const</span> <span class="tok-var">shield</span> = <span class="tok-kw">await</span> <span class="tok-fn">intercept</span>({ <span class="tok-prop">socket</span>: <span class="tok-var">SOCKET</span> });
+
+<span class="tok-com">// 2. Hash the deployed binary — must match the published release.</span>
+<span class="tok-kw">const</span> <span class="tok-var">digest</span> = <span class="tok-kw">await</span> <span class="tok-fn">hash</span>(<span class="tok-var">shield</span>.<span class="tok-prop">binary</span>);
+<span class="tok-fn">assertEqual</span>(<span class="tok-var">digest</span>, <span class="tok-var">EXPECTED_HASH</span>);
+
+<span class="tok-com">// 3. Spin a TCP sniffer for 30s. Total outbound bytes must equal 0.</span>
+<span class="tok-kw">const</span> <span class="tok-var">leak</span> = <span class="tok-kw">await</span> <span class="tok-var">shield</span>.<span class="tok-fn">audit</span>({ <span class="tok-prop">duration</span>: <span class="tok-num">30_000</span> });
+
+<span class="tok-kw">if</span> (<span class="tok-var">leak</span>.<span class="tok-prop">bytes</span> !== <span class="tok-num">0</span>) {
+  <span class="tok-kw">throw</span> <span class="tok-kw">new</span> <span class="tok-fn">Error</span>(<span class="tok-str">`Telemetry detected: ${leak.bytes}B`</span>);
+}
+
+console.<span class="tok-fn">log</span>(<span class="tok-str">"✓ verified · 0B telemetry · 0 cloud calls"</span>);</code></pre>
+            </div>
+          </div>
+          <div class="flex items-center justify-between px-4 py-2 border-t border-white/[0.06] bg-black/40 text-[10.5px] font-mono">
+            <div class="flex items-center gap-3 text-slate-500">
+              <span class="flex items-center gap-1.5 text-[#2dd4bf]"><span class="w-1.5 h-1.5 rounded-full bg-[#2dd4bf]"></span>verified</span>
+              <span>main</span>
+              <span class="hidden sm:inline">Ln 22, Col 32</span>
+            </div>
+            <div class="flex items-center gap-3 text-slate-500">
+              <span class="hidden sm:inline">Spaces: 2</span>
+              <span class="text-[#2dd4bf]">↑0 ↓0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<section id="install" class="relative py-24 lg:py-32">
+  <div class="max-w-5xl mx-auto px-5 sm:px-8 lg:px-12">
+
+    <div class="text-center max-w-2xl mx-auto mb-12 reveal">
+      <div class="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-[0.2em] text-[#38bdf8] mb-4 justify-center">
+        <span class="w-6 h-px bg-[#38bdf8]"></span> 03 / Install <span class="w-6 h-px bg-[#38bdf8]"></span>
+      </div>
+      <h2 class="font-semibold tracking-tight text-white" style="font-size:clamp(1.9rem, 3.5vw, 2.75rem); line-height:1.1;">
+        Running in under 30 seconds.
+      </h2>
+      <p class="mt-4 text-slate-400">No account. No signup. Pick your platform and copy.</p>
+    </div>
+    <div class="reveal" data-delay="1">
+      <div class="flex justify-center mb-6">
+        <div role="tablist" aria-label="Install platform" class="inline-flex p-1 rounded-lg glass-strong">
+          <button role="tab" aria-selected="true" data-tab="macos" class="tab-btn px-4 py-2 rounded-md text-sm font-medium text-white bg-white/[0.06]">macOS</button>
+          <button role="tab" aria-selected="false" data-tab="linux" class="tab-btn px-4 py-2 rounded-md text-sm font-medium text-slate-400 hover:text-white transition-colors">Linux</button>
+          <button role="tab" aria-selected="false" data-tab="windows" class="tab-btn px-4 py-2 rounded-md text-sm font-medium text-slate-400 hover:text-white transition-colors">Windows</button>
+        </div>
+      </div>
+      <div class="rounded-2xl overflow-hidden glass-strong" style="box-shadow:0 30px 60px -20px rgba(0,0,0,.6);">
+        <div class="flex items-center gap-3 px-4 py-2.5 border-b border-white/[0.06] bg-black/40">
+          <div class="flex gap-1.5">
+            <span class="dot bg-[#f87171]/80"></span>
+            <span class="dot bg-[#fbbf24]/80"></span>
+            <span class="dot bg-[#2dd4bf]/80"></span>
+          </div>
+          <span class="text-[11px] font-mono text-slate-500">~/ zsh</span>
+        </div>
+        <div class="p-5 sm:p-6 font-mono text-[13px] leading-relaxed">
+          <div class="tab-panel" data-panel="macos">
+            <div class="text-slate-500">$ <span class="text-slate-300">brew install datashield</span></div>
+            <div class="text-slate-600 mt-1">→ Fetching datashield 2.4.1</div>
+            <div class="text-slate-600">→ Pouring datashield--2.4.1.sonoma.bottle.tar.gz</div>
+            <div class="text-[#2dd4bf] mt-1">✓ Installed to /opt/homebrew/bin/datashield</div>
+            <div class="text-slate-500 mt-3">$ <span class="text-slate-300">datashield --verify &&amp; datashield run</span></div>
+            <div class="text-slate-600 mt-1">→ Hash matches sha256:a1b9…f7c3</div>
+            <div class="text-[#2dd4bf]">✓ Local socket: /tmp/datashield.sock</div>
+            <div class="text-[#2dd4bf]">✓ Poisoner active · Blocklist active · 0B telemetry</div>
+            <div class="text-slate-500 mt-3">$ <span class="inline-block w-2 h-3.5 align-middle bg-[#38bdf8]" style="animation:caret-blink 1s steps(1) infinite;"></span></div>
+          </div>
+          <div class="tab-panel hidden" data-panel="linux">
+            <div class="text-slate-500">$ <span class="text-slate-300">curl -fsSL https://datashield.dev/install.sh | sh</span></div>
+            <div class="text-slate-600 mt-1">→ Downloading datashield 2.4.1 (x86_64-linux)</div>
+            <div class="text-slate-600">→ Verifying signature: OK</div>
+            <div class="text-[#2dd4bf] mt-1">✓ Installed to /usr/local/bin/datashield</div>
+            <div class="text-slate-500 mt-3">$ <span class="text-slate-300">systemctl --user enable --now datashield</span></div>
+            <div class="text-[#2dd4bf]">✓ Service active · Poisoner active · 0B telemetry</div>
+            <div class="text-slate-500 mt-3">$ <span class="inline-block w-2 h-3.5 align-middle bg-[#38bdf8]" style="animation:caret-blink 1s steps(1) infinite;"></span></div>
+          </div>
+          <div class="tab-panel hidden" data-panel="windows">
+            <div class="text-slate-500">PS C:\&gt; <span class="text-slate-300">winget install DataShield.Core</span></div>
+            <div class="text-slate-600 mt-1">→ Found DataShield.Core 2.4.1</div>
+            <div class="text-slate-600">→ Verifying package hash... OK</div>
+            <div class="text-[#2dd4bf] mt-1">✓ Installed to C:\Program Files\DataShield\datashield.exe</div>
+            <div class="text-slate-500 mt-3">PS C:\&gt; <span class="text-slate-300">datashield --verify</span></div>
+            <div class="text-[#2dd4bf]">✓ Hash matches · 0B telemetry · Service running</div>
+            <div class="text-slate-500 mt-3">PS C:\&gt; <span class="inline-block w-2 h-3.5 align-middle bg-[#38bdf8]" style="animation:caret-blink 1s steps(1) infinite;"></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-10 text-center reveal" data-delay="2">
+      <button data-download-btn class="btn-shimmer relative inline-flex items-center gap-2 px-6 py-3.5 rounded-md text-sm font-semibold text-[#04141c] bg-gradient(180deg, #38bdf8, #0ea5e9) hover:shadow-[0_12px_36px_-8px_rgba(56,189,248,.55)] transition-shadow">
+        <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+        <span data-label>Download Now</span>
+      </button>
+      <p class="mt-3 text-xs font-mono text-slate-500">~6 MB · macOS 12+ / Win 10+ / Linux x86_64 &amp; arm64</p>
+    </div>
+  </div>
+</section>
+<section id="faq" class="relative py-20 lg:py-28 border-t border-white/[0.05]">
+  <div class="max-w-4xl mx-auto px-5 sm:px-8 lg:px-12">
+    <div class="mb-12 reveal">
+      <div class="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-[0.2em] text-[#38bdf8] mb-4">
+        <span class="w-6 h-px bg-[#38bdf8]"></span> 04 / FAQ
+      </div>
+      <h2 class="font-semibold tracking-tight text-white" style="font-size:clamp(1.8rem, 3.2vw, 2.5rem);">Questions, answered.</h2>
+    </div>
+
+    <div class="space-y-3">
+      <details class="faq-item reveal group rounded-xl glass-strong p-5 open:bg-white/[0.03] transition-colors">
+        <summary class="flex items-center justify-between cursor-pointer list-none">
+          <span class="text-white font-medium">Does DataShield phone home?</span>
+          <svg class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-45" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </summary>
+        <p class="mt-3 text-slate-400 text-sm">No. The binary contains zero network code outside the local proxy. The verification harness in our repo proves this — every release is tested to confirm outbound bytes equal zero over a 30-second sniff window.</p>
+      </details>
+
+      <details class="faq-item reveal group rounded-xl glass-strong p-5 open:bg-white/[0.03] transition-colors" data-delay="1">
+        <summary class="flex items-center justify-between cursor-pointer list-none">
+          <span class="text-white font-medium">Will it break the websites I visit?</span>
+          <svg class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-45" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </summary>
+        <p class="mt-3 text-slate-400 text-sm">Rarely. Data Poisoner only targets known telemetry endpoints; first-party functionality is untouched. If a site misbehaves, one-click bypass from the menu bar suspends protection for that domain for 10 minutes.</p>
+      </details>
+
+      <details class="faq-item reveal group rounded-xl glass-strong p-5 open:bg-white/[0.03] transition-colors" data-delay="2">
+        <summary class="flex items-center justify-between cursor-pointer list-none">
+          <span class="text-white font-medium">Is the MIT license really the whole thing?</span>
+          <svg class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-45" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </summary>
+        <p class="mt-3 text-slate-400 text-sm">Yes. No "Enterprise Edition", no paid tier, no upsell. The same code that powers Fortune-500 deployments is the code you install. We're funded by individual sponsorships and foundation grants — not your data.</p>
+      </details>
+
+      <details class="faq-item reveal group rounded-xl glass-strong p-5 open:bg-white/[0.03] transition-colors" data-delay="3">
+        <summary class="flex items-center justify-between cursor-pointer list-none">
+          <span class="text-white font-medium">How is this different from uBlock Origin?</span>
+          <svg class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-45" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </summary>
+        <p class="mt-3 text-slate-400 text-sm">uBlock runs inside the browser and blocks at the DOM level. DataShield runs at the OS network layer — it covers every app on your machine (browsers, Electron, mobile simulators, CLI tools) and additionally poisons telemetry that slips past blockers.</p>
+      </details>
+    </div>
+  </div>
+</section>
+<footer class="relative pt-20 pb-10 border-t border-white/[0.05] bg-black/40 overflow-hidden">
+  <div class="footer-glow"></div>
+  <div class="orb" style="width:600px;height:300px;background:#38bdf8;bottom:-200px;left:50%;transform:translateX(-50%);opacity:.18;animation:pulse-soft 6s ease-in-out infinite;"></div>
+
+  <div class="relative max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-8 lg:gap-12 mb-14">
+      <div class="col-span-2">
+        <a href="#top" class="flex items-center gap-2.5 mb-4">
+          <span class="grid place-items-center w-9 h-9 rounded-lg bg-white/[0.03] border border-white/10">
+            <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="color:#38bdf8">
+              <path d="M12 2.5 4 5.2v6.3c0 4.7 3.2 8.2 8 10 4.8-1.8 8-5.3 8-10V5.2L12 2.5Z"/>
+              <path d="m9 12 2.2 2.2L15.5 10" stroke="#2dd4bf"/>
+            </svg>
+          </span>
+          <span class="text-[15px] font-semibold tracking-tight">DataShield</span>
+        </a>
+        <p class="text-sm text-slate-400 max-w-xs">Open-source privacy infrastructure. Built by volunteers, funded by the community, owned by no one.</p>
+        <div class="mt-5 flex items-center gap-3">
+          <a href="#" aria-label="GitHub" class="grid place-items-center w-9 h-9 rounded-md glass hover:bg-white/[0.06] transition-colors text-slate-400 hover:text-white">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5A11.5 11.5 0 0 0 .5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2.02c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.3-1.7-1.3-1.7-1.06-.72.08-.71.08-.71 1.17.08 1.79 1.2 1.79 1.2 1.04 1.79 2.73 1.27 3.4.97.1-.76.4-1.27.74-1.56-2.56-.29-5.26-1.28-5.26-5.7 0-1.26.45-2.29 1.2-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.2-1.5 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.75.81 1.2 1.84 1.2 3.1 0 4.43-2.7 5.41-5.28 5.69.42.36.79 1.07.79 2.16v3.2c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5Z"/></svg>
+          </a>
+          <a href="#" aria-label="Mastodon" class="grid place-items-center w-9 h-9 rounded-md glass hover:bg-white/[0.06] transition-colors text-slate-400 hover:text-white">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M23.27 5.32c-.36-2.67-2.7-4.77-5.47-5.18C17.33.07 15.55 0 12.04 0H12c-3.51 0-4.26 0-4.7.07C5.6.46 3.18 2.27 2.6 4.9c-.27 1.3-.3 2.76-.25 4.08.07 1.92.09 3.83.27 5.74.12 1.27.34 2.53.65 3.77.59 2.27 2.9 4.16 5.1 4.93 2.36.81 4.89.95 7.32.39.27-.06.53-.13.79-.21.6-.19 1.29-.4 1.8-.78.01 0 .02-.01.02-.02v-1.88s-.01-.02-.02-.02c-.01 0-.02 0-.02 0-1.7.4-3.46.6-5.2.6-3.01 0-3.82-1.43-4.05-2.03-.19-.5-.31-1.03-.36-1.56 0-.01 0-.02.02-.02 1.67.4 3.38.61 5.1.61.41 0 .83 0 1.24-.01 1.74-.05 3.58-.13 5.29-.5.04 0 .09-.02.13-.03 2.7-.52 5.28-2.16 5.55-6.32.01-.16.04-1.66.04-1.82.01-.56.18-3.96-.03-6.04zM19.34 14.61h-2.29V9.04c0-1.18-.5-1.78-1.49-1.78-1.1 0-1.65.71-1.65 2.12v3.07H11.65V9.38c0-1.41-.55-2.12-1.65-2.12-.99 0-1.49.6-1.49 1.78v5.57H6.22V8.86c0-1.18.3-2.12.9-2.81.62-.7 1.43-1.05 2.45-1.05 1.17 0 2.06.45 2.64 1.35l.57.95.57-.95c.58-.9 1.47-1.35 2.64-1.35 1.01 0 1.83.35 2.45 1.05.6.69.9 1.63.9 2.81v5.75z"/></svg>
+          </a>
+          <a href="#" aria-label="RSS" class="grid place-items-center w-9 h-9 rounded-md glass hover:bg-white/[0.06] transition-colors text-slate-400 hover:text-white">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M6.18 17.82a2.18 2.18 0 1 1-4.36 0 2.18 2.18 0 0 1 4.36 0zM1.82 9.55v3.07a9.41 9.41 0 0 1 9.41 9.41h3.07A12.48 12.48 0 0 0 1.82 9.55zm0-5.45v3.07A14.86 14.86 0 0 1 16.68 21.9h3.07A17.93 17.93 0 0 0 1.82 4.1z"/></svg>
+          </a>
+        </div>
+      </div>
+      <nav aria-label="Product">
+        <h3 class="text-xs font-mono uppercase tracking-[0.18em] text-slate-500 mb-4">Product</h3>
+        <ul class="space-y-2.5 text-sm">
+          <li><a href="#features" class="text-slate-400 hover:text-white transition-colors">Features</a></li>
+          <li><a href="#transparency" class="text-slate-400 hover:text-white transition-colors">Transparency</a></li>
+          <li><a href="#install" class="text-slate-400 hover:text-white transition-colors">Install</a></li>
+          <li><a href="#" class="text-slate-400 hover:text-white transition-colors">Changelog</a></li>
+          <li><a href="#" class="text-slate-400 hover:text-white transition-colors">Roadmap</a></li>
+        </ul>
+      </nav>
+      <nav aria-label="Resources">
+        <h3 class="text-xs font-mono uppercase tracking-[0.18em] text-slate-500 mb-4">Resources</h3>
+        <ul class="space-y-2.5 text-sm">
+          <li><a href="#" class="text-slate-400 hover:text-white transition-colors">Documentation</a></li>
+          <li><a href="#" class="text-slate-400 hover:text-white transition-colors">Source code</a></li>
+          <li><a href="#" class="text-slate-400 hover:text-white transition-colors">Audit report</a></li>
+          <li><a href="#" class="text-slate-400 hover:text-white transition-colors">Blocklists</a></li>
+          <li><a href="#faq" class="text-slate-400 hover:text-white transition-colors">FAQ</a></li>
+        </ul>
+      </nav>
+      <nav aria-label="Legal">
+        <h3 class="text-xs font-mono uppercase tracking-[0.18em] text-slate-500 mb-4">Legal</h3>
+        <ul class="space-y-2.5 text-sm">
+          <li><a href="#" class="text-slate-400 hover:text-white transition-colors">MIT License</a></li>
+          <li><a href="#" class="text-slate-400 hover:text-white transition-colors">Privacy policy</a></li>
+          <li><a href="#" class="text-slate-400 hover:text-white transition-colors">Terms</a></li>
+          <li><a href="#" class="text-slate-400 hover:text-white transition-colors">Security disclosure</a></li>
+          <li><a href="#" class="text-slate-400 hover:text-white transition-colors">Contact</a></li>
+        </ul>
+      </nav>
+    </div>
+
+    <div class="hairline mb-6"></div>
+
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-slate-500">
+      <p>© 2024 DataShield Collective · MIT Licensed · Built without trackers</p>
+      <div class="flex items-center gap-2">
+        <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#2dd4bf]" style="animation:pulse-soft 1.8s infinite;"></span>All systems operational</span>
+        <span>·</span>
+        <span>v2.4.1</span>
+      </div>
+    </div>
+  </div>
+</footer>
+<div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] opacity-0 pointer-events-none transition-opacity duration-300" role="status" aria-live="polite">
+  <div class="glass-strong rounded-xl px-4 py-3 flex items-center gap-3" style="box-shadow:0 20px 40px -10px rgba(0,0,0,.6);">
+    <div class="grid place-items-center w-8 h-8 rounded-md bg-[#2dd4bf]/15 border border-[#2dd4bf]/30">
+      <svg class="w-4 h-4 text-[#2dd4bf]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg>
+    </div>
+    <div>
+      <div class="text-sm font-medium text-white">Download started</div>
+      <div class="text-xs text-slate-400 font-mono">datashield-2.4.1.dmg · 6.2 MB</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const header = document.getElementById('site-header');
+  let lastScroll = 0;
+  const onScroll = () => {
+    const y = window.scrollY;
+    if (y > 8) header.classList.add('shadow-[0_8px_30px_-12px_rgba(0,0,0,.7)]');
+    else header.classList.remove('shadow-[0_8px_30px_-12px_rgba(0,0,0,.7)]');
+    lastScroll = y;
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  const menuToggle = document.getElementById('menu-toggle');
+  const mobileMenu = document.getElementById('mobile-menu');
+  const menuIcon = document.getElementById('menu-icon');
+  let menuOpen = false;
+  menuToggle.addEventListener('click', () => {
+    menuOpen = !menuOpen;
+    mobileMenu.classList.toggle('open', menuOpen);
+    menuToggle.setAttribute('aria-expanded', String(menuOpen));
+    menuIcon.innerHTML = menuOpen
+      ? '<path d="M6 6l12 12M18 6 6 18"/>'
+      : '<path d="M4 7h16M4 12h16M4 17h16"/>';
+  });
+  mobileMenu.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', () => {
+      menuOpen = false;
+      mobileMenu.classList.remove('open');
+      menuToggle.setAttribute('aria-expanded', 'false');
+      menuIcon.innerHTML = '<path d="M4 7h16M4 12h16M4 17h16"/>';
+    });
+  });
+  document.querySelectorAll('a[href^="#"]').forEach(link => {
+    link.addEventListener('click', (e) => {
+      const id = link.getAttribute('href');
+      if (id.length <= 1) return;
+      const target = document.querySelector(id);
+      if (!target) return;
+      e.preventDefault();
+      const top = target.getBoundingClientRect().top + window.scrollY - 72; 
+      window.scrollTo({ top, behavior: 'smooth' });
+    });
+  });
+  const reveals = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('in');
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+  reveals.forEach(el => io.observe(el));
+  const DOWNLOAD_FEEDBACK_MS = 1800;
+  const downloadBtns = document.querySelectorAll('[data-download-btn]');
+  const toast = document.getElementById('toast');
+  let toastTimer = null;
+
+  const showToast = () => {
+    toast.style.opacity = '1';
+    toast.style.transform = 'translate(-50%, 0)';
+    toast.style.animation = 'toast-in .35s cubic-bezier(.2,.7,.2,1)';
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toast.style.opacity = '0';
+    }, 2600);
+  };
+
+  downloadBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.state === 'done') return;
+      const label = btn.querySelector('[data-label]');
+      if (!label) return;
+
+      btn.dataset.state = 'done';
+      btn.style.background = 'linear-gradient(180deg, #2dd4bf, #14b8a6)';
+      label.innerHTML = '✓ Downloaded';
+
+      showToast();
+      setTimeout(() => {
+        btn.dataset.state = '';
+        btn.style.background = '';
+        label.textContent = 'Download Now';
+      }, DOWNLOAD_FEEDBACK_MS);
+    });
+  });
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  const panels = document.querySelectorAll('.tab-panel');
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.tab;
+      tabBtns.forEach(b => {
+        const active = b === btn;
+        b.setAttribute('aria-selected', String(active));
+        b.classList.toggle('bg-white/[0.06]', active);
+        b.classList.toggle('text-white', active);
+        b.classList.toggle('text-slate-400', !active);
+      });
+      panels.forEach(p => {
+        p.classList.toggle('hidden', p.dataset.panel !== key);
+      });
+    });
+  });
+  const stage = document.getElementById('popup-stage');
+  if (stage) {
+    const POPUPS = [
+      { type: 'Tracker',  title: 'Google Analytics',  desc: 'Script blocked · XHR intercepted' },
+      { type: 'Cookie',   title: 'CookieConsent SDK', desc: 'Wall suppressed before paint'   },
+      { type: 'Pixel',    title: 'Meta Pixel',        desc: 'Request poisoned · 4KB noise'    },
+      { type: 'Fingerprint', title: 'FingerprintJS',  desc: 'API overridden · canvas noise'   },
+      { type: 'Beacon',   title: 'navigator.sendBeacon', desc: 'Dropped · 0B sent'           },
+    ];
+
+    let idx = 0;
+    const cycle = () => {
+      const data = POPUPS[idx % POPUPS.length];
+      idx++;
+
+      const el = document.createElement('div');
+      el.className = 'popup';
+      el.style.top = `${36 + (idx * 22) % 220}px`;
+      el.style.right = `${14 + ((idx * 13) % 30)}px`;
+      el.style.animation = 'popup-out 3.4s cubic-bezier(.2,.7,.2,1) forwards';
+
+      el.innerHTML = `
+        <div class="icon">
+          <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 9v4"/><path d="M12 17h.01"/>
+            <path d="M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          </svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="ttl">${data.type} · ${data.title}</div>
+          <div class="desc">${data.desc}</div>
+        </div>
+      `;
+      stage.appendChild(el);
+      setTimeout(() => el.remove(), 3500);
+    };
+
+    setTimeout(cycle, 600);
+    setInterval(cycle, 1400);
+  }
+
+  const faqs = document.querySelectorAll('.faq-item');
+  faqs.forEach(item => {
+    item.addEventListener('toggle', () => {
+      if (item.open) {
+        faqs.forEach(o => { if (o !== item) o.open = false; });
+      }
+    });
+  });
+
+  const orbs = document.querySelectorAll('.orb');
+  let mouseX = 0, mouseY = 0, curX = 0, curY = 0;
+  window.addEventListener('mousemove', (e) => {
+    mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+    mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+  }, { passive: true });
+
+  const tick = () => {
+    curX += (mouseX - curX) * 0.05;
+    curY += (mouseY - curY) * 0.05;
+    orbs.forEach((orb, i) => {
+      const depth = (i % 2 === 0) ? 14 : 8;
+      orb.style.transform = `translate(${curX * depth}px, ${curY * depth}px)`;
+    });
+    requestAnimationFrame(tick);
+  };
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    tick();
+  }
+})();
+</script>
+</body>
+</html>
